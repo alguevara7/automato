@@ -69,19 +69,15 @@
                    (str/join "," data-points) "|"
                    (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))))})))
 
-(defn day-to-points-done []
-  (reduce (fn [] ()) {} (util/range-of-days (:start_date project) (:end_date project)))) 
-
 (defn project-to-html [project-code include-chapters]
-  (let [project (db/project project-code)
-        stories-to-chapters (reduce
+  (let [stories-to-chapters (reduce
                                     (fn [result, story] (assoc result story (db/chapters (:story_key story))))
                                     {}
                                     (db/stories project-code))
         all-chapters (reduce (fn [chapters, story-to-chapter] (into chapters (val story-to-chapter))) [] stories-to-chapters)]
     (html [:div (burn-up-chart [1 2 4 10 13 15 21]
                                20
-                               (reduce + 0 (map (fn [chapter] (:size chapter)) all-chapters)))]
+                               (reduce + 0 (map (fn [chapter] (read-string (:size chapter))) all-chapters)))]
           [:div
            [:table {:class "ricardo-table"}
             [:thead [:th "Story Name"] [:th "Size"] [:th "% Done"] [:th "% Dev Budget Used"] [:th "Budget Alert"]]

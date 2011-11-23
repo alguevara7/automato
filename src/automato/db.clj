@@ -27,14 +27,6 @@
     :password (property-value "password")}
    (database-resource)))
 
-(defn project [project-code]
-  (sql/with-connection db
-    (sql/with-query-results results
-      [(str "SELECT p.project_key project_key, p.start_time start_time, p.end_time end_time "
-                    "FROM project p "
-                    "WHERE p.project_code = ? ") project-code]
-      (into [] results))))
-
 (defn stories [project-code]
   (sql/with-connection db
     (sql/with-query-results results
