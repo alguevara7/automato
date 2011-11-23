@@ -54,8 +54,8 @@
              (seq1/indexed (repeat max-data-points (/ goal max-data-points))))))
 
 (defn burn-up-chart [data-points max-data-points goal]
-  (image
-   (url "http://chart.apis.google.com/chart"
+  (do (spy (str "goal = " goal))
+      (image (url "http://chart.apis.google.com/chart"
         {:chs "600x250"
          :chtt "burnup Chart"
          :cht "lxy"
@@ -67,7 +67,11 @@
                    (line max-data-points goal) "|"
                    (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))) "|"
                    (str/join "," data-points) "|"
-                   (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))))})))
+                   (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))))}))))
+
+(defn generate-burn-up-chart-data-points [all-chapters]
+  (date-range (date "2011/11/01") (date "2011/12/06") ))
+
 
 (defn project-to-html [project-code include-chapters]
   (let [stories-to-chapters (reduce
@@ -110,5 +114,8 @@
     "Usage: automato [-c] project-code"
     [[include-chapters? c? "include information about chapters in the report ?" false]
      project-code]
-    (println (project-to-html (first project-code) include-chapters?))))
+    (do
+      (project-to-html (first project-code) include-chapters?)
+      (println "done"))))
 
+;

@@ -1,9 +1,10 @@
-pom.xml
+qpom.xml
 *jar
-/lib/
+/qqlib/
 /classes/
 .lein-failures
 .lein-deps-sum
 *~
 .#*
 page.html
+q

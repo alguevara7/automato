@@ -8,5 +8,8 @@
   (:import (java.util Date)))
 
 
-(defn range-of-days []
+(defn date-range []
   [(Date.)])
+
+
+;(date-range (date "2011/11/01") (date "2011/12/06") )
