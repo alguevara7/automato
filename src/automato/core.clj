@@ -13,10 +13,6 @@
   (:import (java.net URI)
            (java.util Properties)))
 
-(defn spy [value]
-  (do (println value)
-      value))
-
 (defn calculate-percent-done [chapters]
   (if (seq chapters)
     (* (/ (count (filter (fn [chapter] (:completed chapter)) chapters))
