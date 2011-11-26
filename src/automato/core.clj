@@ -11,7 +11,8 @@
             [clojure.java.jdbc :as sql]
             [clojure.contrib.seq :as seq1])
   (:import (java.net URI)
-           (java.util Properties)))
+           (java.util Properties)
+           (java.util Calendar)))
 
 (defn calculate-percent-done [chapters]
   (if (seq chapters)
@@ -50,8 +51,7 @@
              (seq1/indexed (repeat max-data-points (/ goal max-data-points))))))
 
 (defn burn-up-chart [data-points max-data-points goal]
-  (do (spy (str "goal = " goal))
-      (image (url "http://chart.apis.google.com/chart"
+  (image (url "http://chart.apis.google.com/chart"
         {:chs "600x250"
          :chtt "burnup Chart"
          :cht "lxy"
@@ -63,11 +63,28 @@
                    (line max-data-points goal) "|"
                    (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))) "|"
                    (str/join "," data-points) "|"
-                   (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))))}))))
+                   (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))))})))
 
-(defn generate-burn-up-chart-data-points [all-chapters]
-  (date-range (date "2011/11/01") (date "2011/12/06") ))
+(defn wipe-time [date-time]
+  (let [calendar (Calendar/getInstance)]
+    (do
+      (.setTime calendar date-time)
+      (.set calendar (Calendar/HOUR) 0)
+      (.set calendar (Calendar/MINUTE) 0)
+      (.set calendar (Calendar/SECOND) 0)
+      (.set calendar (Calendar/MILLISECOND) 0)
+      (.getTime calendar))))
 
+(defn increment [map key delta]
+  (let [current-value (get map key)]
+    (assoc map key (+ current-value delta))))
+
+(defn generate-burn-up-chart-data-points [start-date end-date chapters]
+  (let [data-points-baseline (zipmap (util/date-range start-date end-date) (repeat 0))]
+       (reduce
+        (fn [data-points chapter] (increment data-points (wipe-time (:completed chapter)) (:size chapter)))
+        data-points-baseline
+        chapters)))
 
 (defn project-to-html [project-code include-chapters]
   (let [stories-to-chapters (reduce
@@ -75,7 +92,7 @@
                                     {}
                                     (db/stories project-code))
         all-chapters (reduce (fn [chapters, story-to-chapter] (into chapters (val story-to-chapter))) [] stories-to-chapters)]
-    (html [:div (burn-up-chart [1 2 4 10 13 15 21]
+    (html [:div (burn-up-chart (generate-burn-up-chart-data-points all-chapters)
                                20
                                (reduce + 0 (map (fn [chapter] (read-string (:size chapter))) all-chapters)))]
           [:div

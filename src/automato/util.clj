@@ -18,13 +18,17 @@
       (.set calendar (Calendar/DAY_OF_MONTH) day)
       (.set calendar (Calendar/MONTH) month)
       (.set calendar (Calendar/YEAR) year)
+      (.set calendar (Calendar/HOUR) 0)
+      (.set calendar (Calendar/MINUTE) 0)
+      (.set calendar (Calendar/SECOND) 0)
+      (.set calendar (Calendar/MILLISECOND) 0)
       (.getTime calendar))))
 
-(defn date-range [start end]
-  (vec (take-while (fn [date] (<= (.getTime date) (.getTime end))) (date-lazy-seq start))))
-
-;use tail recursion
 (defn- date-lazy-seq [start]
   (let [calendar (Calendar/getInstance)]
     (.setTime calendar start)
     (lazy-seq (cons (.getTime  calendar) (date-lazy-seq (do (.add calendar (Calendar/DAY_OF_MONTH) 1) (.getTime calendar)))))))
+
+(defn date-range [start end]
+  (vec (take-while (fn [date] (<= (.getTime date) (.getTime end))) (date-lazy-seq start))))
+
