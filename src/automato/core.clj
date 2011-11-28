@@ -12,7 +12,8 @@
             [clojure.contrib.seq :as seq1])
   (:import (java.net URI)
            (java.util Properties)
-           (java.util Calendar)))
+           (java.util Calendar)
+           (java.util Date)))
 
 (defn calculate-percent-done [chapters]
   (if (seq chapters)
@@ -62,29 +63,30 @@
          :chd (str "t:"
                    (line max-data-points goal) "|"
                    (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))) "|"
-                   (str/join "," data-points) "|"
-                   (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))))})))
+                   (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))) "|"
+                   (str/join "," data-points)
+                   )})))
 
 (defn wipe-time [date-time]
   (let [calendar (Calendar/getInstance)]
     (do
       (.setTime calendar date-time)
-      (.set calendar (Calendar/HOUR) 0)
+      (.set calendar (Calendar/HOUR_OF_DAY) 0)
       (.set calendar (Calendar/MINUTE) 0)
       (.set calendar (Calendar/SECOND) 0)
       (.set calendar (Calendar/MILLISECOND) 0)
       (.getTime calendar))))
 
 (defn increment [map key delta]
-  (let [current-value (get map key)]
+  (if-let [current-value (get map key)]
     (assoc map key (+ current-value delta))))
 
 (defn generate-burn-up-chart-data-points [start-date end-date chapters]
   (let [data-points-baseline (zipmap (util/date-range start-date end-date) (repeat 0))]
-       (reduce
-        (fn [data-points chapter] (increment data-points (wipe-time (:completed chapter)) (:size chapter)))
+    (vals (reduce
+        (fn [data-points chapter] (increment data-points (Date. (.getTime (:completed chapter))) (read-string (:size chapter))))
         data-points-baseline
-        chapters)))
+        (filter (fn [chapter] (:completed chapter)) chapters)))))
 
 (defn project-to-html [project-code include-chapters]
   (let [stories-to-chapters (reduce
@@ -92,7 +94,8 @@
                                     {}
                                     (db/stories project-code))
         all-chapters (reduce (fn [chapters, story-to-chapter] (into chapters (val story-to-chapter))) [] stories-to-chapters)]
-    (html [:div (burn-up-chart (generate-burn-up-chart-data-points all-chapters)
+    (do
+      (html [:div (burn-up-chart (generate-burn-up-chart-data-points (util/date 1 10 2011) (util/date 1 11 2011) all-chapters)
                                20
                                (reduce + 0 (map (fn [chapter] (read-string (:size chapter))) all-chapters)))]
           [:div
@@ -119,7 +122,7 @@
                          [:td (:chapter_name chapter)]
 			 [:td (chapter-done chapter)]
                          [:td (:size chapter)]
-                         [:td (format "%.2f" (float (/ (budget-used chapter) 8)))]])]]]))))]])))
+                         [:td (format "%.2f" (float (/ (budget-used chapter) 8)))]])]]]))))]]))))
 
 (defn -main [& args]
   (with-command-line
@@ -127,8 +130,5 @@
     "Usage: automato [-c] project-code"
     [[include-chapters? c? "include information about chapters in the report ?" false]
      project-code]
-    (do
-      (project-to-html (first project-code) include-chapters?)
-      (println "done"))))
+    (println (project-to-html (first project-code) include-chapters?))))
 
-;

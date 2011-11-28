@@ -15,10 +15,10 @@
 (defn date [day month year]
   (let [calendar (Calendar/getInstance)]
     (do
-      (.set calendar (Calendar/DAY_OF_MONTH) day)
-      (.set calendar (Calendar/MONTH) month)
       (.set calendar (Calendar/YEAR) year)
-      (.set calendar (Calendar/HOUR) 0)
+      (.set calendar (Calendar/MONTH) month)
+      (.set calendar (Calendar/DAY_OF_MONTH) day)
+      (.set calendar (Calendar/HOUR_OF_DAY) 0)
       (.set calendar (Calendar/MINUTE) 0)
       (.set calendar (Calendar/SECOND) 0)
       (.set calendar (Calendar/MILLISECOND) 0)
