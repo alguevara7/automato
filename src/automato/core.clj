@@ -77,14 +77,17 @@
       (.set calendar (Calendar/MILLISECOND) 0)
       (.getTime calendar))))
 
-(defn increment [map key delta]
-  (if-let [current-value (get map key)]
-    (assoc map key (+ current-value delta))))
+(defn add-to-all [from to value map]
+  (for [date (util/date-range from to)]
+    (do
+      (util/spy (str "date: " date "\n"))
+      (if-let [current-value (get map date)]
+        (assoc map key (+ current-value value))))))
 
 (defn generate-burn-up-chart-data-points [start-date end-date chapters]
   (let [data-points-baseline (zipmap (util/date-range start-date end-date) (repeat 0))]
     (vals (reduce
-        (fn [data-points chapter] (increment data-points (Date. (.getTime (:completed chapter))) (read-string (:size chapter))))
+        (fn [data-points chapter] (add-to-all data-points start-date (Date. (.getTime (:completed chapter))) (read-string (:size chapter))))
         data-points-baseline
         (filter (fn [chapter] (:completed chapter)) chapters)))))
 
