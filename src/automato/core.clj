@@ -1,16 +1,17 @@
 (ns automato.core
   (:use [clojure.core]
+        [automato.util]
         [hiccup.core]
         [hiccup.page-helpers]
         [clojure.contrib.properties]
         [clojure.java.io]
-        [clojure.contrib.command-line])
+        [clojure.contrib.command-line]
+        [clojure.contrib.generic.functor])
   (:require [automato.db :as db]
-            [automato.util :as util]
             [clojure.string :as str]
             [clojure.java.jdbc :as sql]
             [clojure.contrib.seq :as seq1])
-  (:import (java.net URI)
+   (:import (java.net URI)
            (java.util Properties)
            (java.util Calendar)
            (java.util Date)))
@@ -61,8 +62,8 @@
          :chxr (str "0,0," max-data-points ",1|1,0," goal ",1")
          :chds (str "0," goal)
          :chd (str "t:"
-                   (line max-data-points goal) "|"
                    (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))) "|"
+                   (line max-data-points goal) "|"
                    (str/join "," (map (fn [index] (str index)) (range 0 max-data-points))) "|"
                    (str/join "," data-points)
                    )})))
@@ -77,29 +78,22 @@
       (.set calendar (Calendar/MILLISECOND) 0)
       (.getTime calendar))))
 
-(defn add-to-all [from to value map]
-  (for [date (util/date-range from to)]
-    (do
-      (util/spy (str "date: " date "\n"))
-      (if-let [current-value (get map date)]
-        (assoc map key (+ current-value value))))))
-
 (defn generate-burn-up-chart-data-points [start-date end-date chapters]
-  (let [data-points-baseline (zipmap (util/date-range start-date end-date) (repeat 0))]
-    (vals (reduce
-        (fn [data-points chapter] (add-to-all data-points start-date (Date. (.getTime (:completed chapter))) (read-string (:size chapter))))
-        data-points-baseline
-        (filter (fn [chapter] (:completed chapter)) chapters)))))
+  (let [date-to-points-done (fmap (fn [chapters-completed-on-same-day]
+                                    (reduce + 0 (map #(read-string (:size %)) chapters-completed-on-same-day)))
+                                  (group-by (fn [chapter] (:completed chapter))
+                                            chapters))]
+    (into [] (for [date (date-range start-date end-date)]
+               (reduce (fn [sum d] (+ sum (if-let [points (get date-to-points-done d)] points 0))) 0 (date-range start-date date))))))
 
 (defn project-to-html [project-code include-chapters]
-  (let [stories-to-chapters (reduce
-                                    (fn [result, story] (assoc result story (db/chapters (:story_key story))))
+  (let [stories-to-chapters (reduce (fn [result, story] (assoc result story (db/chapters (:story_key story))))
                                     {}
                                     (db/stories project-code))
         all-chapters (reduce (fn [chapters, story-to-chapter] (into chapters (val story-to-chapter))) [] stories-to-chapters)]
     (do
-      (html [:div (burn-up-chart (generate-burn-up-chart-data-points (util/date 1 10 2011) (util/date 1 11 2011) all-chapters)
-                               20
+      (html [:div (burn-up-chart (generate-burn-up-chart-data-points (date 1 10 2011) (date 9 11 2011) all-chapters)
+                               (count (date-range (date 1 10 2011) (date 9 11 2011)))
                                (reduce + 0 (map (fn [chapter] (read-string (:size chapter))) all-chapters)))]
           [:div
            [:table {:class "ricardo-table"}
